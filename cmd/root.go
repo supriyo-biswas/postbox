@@ -7,9 +7,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "unknown"
+
 var rootCmd = &cobra.Command{
-	Use:   "postbox",
-	Short: "Email testing server",
+	Use:     "postbox",
+	Short:   "Email testing server",
+	Version: version,
 }
 
 func init() {
