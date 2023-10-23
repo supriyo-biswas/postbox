@@ -45,13 +45,13 @@ If you want to configure STARTTLS support for the SMTP server, add HTTPS for the
 
 ```toml
 [server.smtp]
-    port = 2525 # SMTP port, default is 8025
+    listen = ":2525" # SMTP port, default is 8025
     key_file = "my-key.pem" # TLS key file, for STARTTLS
     cert_file = "my-cert.pem" # TLS cert file, for STARTTLS
     max_message_bytes = 1000000 # Max size of an email, in bytes (default is 10MB)
 
 [server.http]
-    port = 2580 # HTTP port, default is 8080
+    listen = ":2580" # HTTP port, default is 8080
     key_file = "my-key.pem" # TLS key file, for HTTPS
     cert_file = "my-cert.pem" # TLS cert file, for HTTPS
 
