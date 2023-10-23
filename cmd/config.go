@@ -145,5 +145,14 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 		cfg.Logging = &LoggingConfig{}
 	}
 
+	if cfg.Logging.Filename != "" && !filepath.IsAbs(cfg.Logging.Filename) {
+		logPath, err := xdg.DataFile(path.Join("postbox", cfg.Logging.Filename))
+		if err != nil {
+			return nil, err
+		}
+
+		cfg.Logging.Filename = logPath
+	}
+
 	return &cfg, nil
 }
