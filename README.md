@@ -41,7 +41,7 @@ Postbox is compatible with both v1 and v2 APIs. For the v2 APIs, simply pass in 
 
 ## Advanced usage
 
-If you want to configure STARTTLS support for the SMTP server, add HTTPS for the API server, or configure the server to listen on a different port, like this:
+If you want to configure STARTTLS support for the SMTP server, add HTTPS for the API server, or configure the server to listen on a different port, define a TOML file like this:
 
 ```toml
 [server.smtp]
