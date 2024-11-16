@@ -10,6 +10,7 @@ const timestampFormat = "2006-01-02T15:04:05.000Z"
 
 const (
 	attachmentNotFoundMsg  = "attachment not found"
+	basicAuthFailedMsg     = "invalid username or password for basic auth"
 	inboxNameMissingMsg    = "missing inbox name"
 	inboxNotFoundMsg       = "inbox not found"
 	internalServerErrorMsg = "an internal error occurred"
@@ -69,7 +70,7 @@ type Message struct {
 	SmtpInfo     MessageSmtpInfo `json:"smtp_information"`
 
 	// custom extension that provides a parsed list of all recipients
-	Recipients map[string][]MailAddress `json:"recipients"`
+	Addresses map[string][]MailAddress `json:"addresses"`
 }
 
 type MessageHeaders struct {
@@ -93,14 +94,24 @@ type Attachment struct {
 	HumanSize      string  `json:"attachment_human_size"`
 }
 
+type WebInbox struct {
+	*Inbox
+	Token string `json:"token"`
+}
+
 type Error struct {
 	Message string `json:"message"`
 }
 
 func sendError(w http.ResponseWriter, status int, msg string) {
+	b, err := json.Marshal(Error{msg})
+	if err != nil {
+		panic(err)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(Error{msg})
+	w.Write(b)
 }
 
 func sendResponse(w http.ResponseWriter, status int, data interface{}) {
@@ -111,6 +122,7 @@ func sendResponse(w http.ResponseWriter, status int, data interface{}) {
 		return
 	}
 
+	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
 }

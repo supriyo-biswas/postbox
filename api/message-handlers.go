@@ -7,11 +7,8 @@ import (
 	"net/http"
 
 	ent "github.com/supriyo-biswas/postbox/entities"
-	"github.com/sym01/htmlsanitizer"
 	"gorm.io/gorm"
 )
-
-var sanitizer = htmlsanitizer.NewHTMLSanitizer()
 
 func (s *Server) sendMessageResponse(w http.ResponseWriter, email *ent.Email) {
 	result, err := s.buildMessageResponse(email)
@@ -130,7 +127,7 @@ func (s *Server) getSanitizedHTMLBody(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sanitized, err := sanitizer.Sanitize(content.Content)
+	sanitized, err := s.sanitizer.Sanitize(content.Content)
 	if err != nil {
 		log.Printf("sanitizer failed for email %d: %s", email.Id, err)
 		sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -188,8 +185,4 @@ func (s *Server) downloadAttachment(w http.ResponseWriter, r *http.Request) {
 	content := r.Context().Value(attachmentContextKey).(*ent.EmailContent)
 	w.Header().Set("Content-Type", content.MimeType)
 	w.Write(content.Content)
-}
-
-func init() {
-	sanitizer.GlobalAttr = []string{}
 }

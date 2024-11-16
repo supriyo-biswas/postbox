@@ -31,11 +31,52 @@ func (s *Server) applyBodyLimit(next http.Handler) http.Handler {
 	})
 }
 
+func (s *Server) enforceBasicAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u, p, ok := r.BasicAuth()
+		if !ok {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			sendError(w, http.StatusUnauthorized, basicAuthFailedMsg)
+			return
+		}
+
+		var inbox ent.Inbox
+		tx := s.db.Where("name = ?", u).First(&inbox)
+		if tx.Error != nil {
+			if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+				sendError(w, http.StatusUnauthorized, basicAuthFailedMsg)
+				return
+			}
+
+			log.Printf("failed to get inbox: %s", tx.Error)
+			sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
+			return
+		}
+
+		res, err := utils.VerifySecret(p, inbox.ApiKey)
+		if err != nil {
+			log.Printf("failed to verify secret for %s: %s", p, err)
+			sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
+			return
+		}
+
+		if !res {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			sendError(w, http.StatusUnauthorized, basicAuthFailedMsg)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, inboxContextKey, &inbox)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func (s *Server) bindInbox(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := mux.Vars(r)["inbox"]
 		if name == "" {
-			log.Printf("inbox name missing")
 			sendError(w, http.StatusBadRequest, inboxNameMissingMsg)
 			return
 		}
@@ -57,8 +98,6 @@ func (s *Server) bindInbox(next http.Handler) http.Handler {
 				sendError(w, http.StatusBadRequest, unknownAuthTypeMsg)
 				return
 			}
-
-			key = parts[1]
 		} else if queryToken != "" {
 			key = queryToken
 		} else if headerToken != "" {
@@ -66,14 +105,13 @@ func (s *Server) bindInbox(next http.Handler) http.Handler {
 		}
 
 		if key == "" {
-			sendError(w, http.StatusBadRequest, missingAuthTokenMsg)
+			sendError(w, http.StatusBadRequest, basicAuthFailedMsg)
 			return
 		}
 
 		var tx *gorm.DB
 		var inbox ent.Inbox
-		id, err := strconv.ParseInt(name, 10, 64)
-		if err == nil {
+		if id, err := strconv.ParseInt(name, 10, 64); err == nil {
 			tx = s.db.Where("id = ? or name = ?", id, name).First(&inbox)
 		} else {
 			tx = s.db.Where("name = ?", name).First(&inbox)
@@ -83,13 +121,14 @@ func (s *Server) bindInbox(next http.Handler) http.Handler {
 			if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 				sendError(w, http.StatusNotFound, inboxNotFoundMsg)
 			} else {
+				log.Printf("failed to get inbox: %s", tx.Error)
 				sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
 			}
 			return
 		}
 
 		if res, err := utils.VerifySecret(key, inbox.ApiKey); err != nil {
-			log.Printf("failed to verify secret: %s", err)
+			log.Printf("failed to verify secret for %s: %s", key, err)
 			sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		} else if !res {

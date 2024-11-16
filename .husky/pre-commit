@@ -1,0 +1,3 @@
+#!/bin/bash
+
+npx eslint frontend/*.js || (npx eslint --fix frontend/*.js || exit 1)

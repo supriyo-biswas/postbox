@@ -62,7 +62,7 @@ func getDefaultPath(inputPath, basePath, file string) string {
 		return inputPath
 	}
 
-	return path.Join(basePath, inputPath)
+	return path.Join(basePath, inputPath, file)
 }
 
 func readConfig(flags *pflag.FlagSet) (*Config, error) {

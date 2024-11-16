@@ -1,0 +1,153 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Upload frontend assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: api/dist
+
+  build-linux-amd64:
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: api/dist
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Build linux/amd64 binary
+        run: |
+          COMMIT_ID=$(git rev-parse --short HEAD)
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-amd64
+
+      - name: Upload linux/amd64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: postbox-linux-amd64
+          path: postbox-linux-amd64
+
+  build-linux-arm64:
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: api/dist
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Build linux/arm64 binary
+        run: |
+          COMMIT_ID=$(git rev-parse --short HEAD)
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-arm64
+
+      - name: Upload linux/arm64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: postbox-linux-arm64
+          path: postbox-linux-arm64
+
+  build-darwin-arm64:
+    runs-on: macos-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download frontend assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: api/dist
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Build darwin/arm64 binary
+        run: |
+          COMMIT_ID=$(git rev-parse --short HEAD)
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-darwin-arm64
+
+      - name: Upload darwin/arm64 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: postbox-darwin-arm64
+          path: postbox-darwin-arm64
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-linux-amd64, build-linux-arm64, build-darwin-arm64]
+    steps:
+      - name: Download linux/amd64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: postbox-linux-amd64
+          path: postbox-linux-amd64
+
+      - name: Download linux/arm64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: postbox-linux-arm64
+          path: postbox-linux-arm64
+
+      - name: Download darwin/arm64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: postbox-darwin-arm64
+          path: postbox-darwin-arm64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            postbox-linux-amd64
+            postbox-linux-arm64
+            postbox-darwin-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

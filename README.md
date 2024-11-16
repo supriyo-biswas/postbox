@@ -5,6 +5,7 @@ Postbox is an email testing server for developers. It acts as a local SMTP serve
 ## Features
 
 - Single binary with no dependencies
+- Web UI to view emails (WIP)
 - Multiple inboxes to segregate emails by project
 - Support for HTML emails and attachments
 - Support for STARTTLS and HTTPS
@@ -17,20 +18,16 @@ Postbox is an email testing server for developers. It acts as a local SMTP serve
 ```bash
 curl -sSLfo postbox "https://github.com/supriyo-biswas/postbox/releases/download/$(curl -sSL https://api.github.com/repos/supriyo-biswas/postbox/releases | sed -nr 's/.*"tag_name": "(.*)".*/\1/gp' | head -n1)/postbox-$(uname -sm | tr 'A-Z ' 'a-z-')" && chmod +x postbox
 ```
-2. Create your first inbox by providing an inbox name and note down the credentials:
-```bash
-./postbox inbox create my-inbox
-```
-3. Start the server:
+2. Start the server:
 ```bash
 ./postbox server
 ```
-4. Send an email to the server by configuring your application to use the following SMTP settings:
+3. Send an email to the server by configuring your application to use the following SMTP settings:
   - Host: localhost
   - Port: 8025
-  - SMTP Username/Password: from step 3
+  - SMTP Username/Password: `postbox-default/postbox-default`
   - SSL/TLS: None
-5. Use the API server to fetch inboxes, emails and attachments:
+4. Authenticate as `postbox-default/postbox-default` on http://localhost:8080 or use the API server to fetch inboxes, emails and attachments:
 ```bash
 curl localhost:8080/api/v1/inboxes/1/messages -H "Api-Token: <token>"
 ```
@@ -38,6 +35,25 @@ curl localhost:8080/api/v1/inboxes/1/messages -H "Api-Token: <token>"
 For details on the API, see the [API documentation](https://api-docs.mailtrap.io/docs/mailtrap-api-docs/5tjdeg9545058-mailtrap-api). The inbox, email/message and attachment APIs are supported.
 
 Postbox is compatible with both v1 and v2 APIs. For the v2 APIs, simply pass in any random number for the account ID, since it is a local service and does not have the concept of user accounts.
+
+## Creating inboxes
+
+By default, Postbox creates a single inbox called `postbox-default` with the ID 1 and the SMTP username, password and HTTP API key all set to `postbox-default`. You can create additional inboxes by running the following command:
+
+```bash
+./postbox inbox add my-inbox
+```
+
+This will print the details of the new inbox like this:
+
+```
+Inbox ID: 2
+SMTP username: my-inbox
+SMTP password: <...>
+API key: <...>
+```
+
+You can now use these credentials to send emails to the server and authenticate with the API server.
 
 ## Advanced usage
 

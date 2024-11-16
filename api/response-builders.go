@@ -15,7 +15,7 @@ func (s *Server) buildMessageResponse(email *ent.Email) (*Message, error) {
 		return nil, err
 	}
 
-	msgRecipients := map[string][]MailAddress{
+	msgAddresses := map[string][]MailAddress{
 		"from": make([]MailAddress, 0),
 		"to":   make([]MailAddress, 0),
 		"cc":   make([]MailAddress, 0),
@@ -35,7 +35,7 @@ func (s *Server) buildMessageResponse(email *ent.Email) (*Message, error) {
 		}
 
 		if key != "" {
-			msgRecipients[key] = append(msgRecipients[key], MailAddress{
+			msgAddresses[key] = append(msgAddresses[key], MailAddress{
 				Name:    recipient.Name,
 				Address: recipient.Address,
 			})
@@ -43,15 +43,15 @@ func (s *Server) buildMessageResponse(email *ent.Email) (*Message, error) {
 	}
 
 	var fromEmail, fromName *string
-	if len(msgRecipients["from"]) > 0 {
-		fromEmail = &msgRecipients["from"][0].Address
-		fromName = &msgRecipients["from"][0].Name
+	if len(msgAddresses["from"]) > 0 {
+		fromEmail = &msgAddresses["from"][0].Address
+		fromName = &msgAddresses["from"][0].Name
 	}
 
 	var toEmail, toName *string
-	if len(msgRecipients["to"]) > 0 {
-		toEmail = &msgRecipients["to"][0].Address
-		toName = &msgRecipients["to"][0].Name
+	if len(msgAddresses["to"]) > 0 {
+		toEmail = &msgAddresses["to"][0].Address
+		toName = &msgAddresses["to"][0].Name
 	}
 
 	var content []ent.EmailContent
@@ -81,15 +81,15 @@ func (s *Server) buildMessageResponse(email *ent.Email) (*Message, error) {
 		Id:           email.Id,
 		InboxId:      email.InboxId,
 		Subject:      email.Subject,
-		SentAt:       email.CreatedAt.Format(timestampFormat),
-		CreatedAt:    email.CreatedAt.Format(timestampFormat),
-		UpdatedAt:    email.UpdatedAt.Format(timestampFormat),
+		SentAt:       email.CreatedAt.UTC().Format(timestampFormat),
+		CreatedAt:    email.CreatedAt.UTC().Format(timestampFormat),
+		UpdatedAt:    email.UpdatedAt.UTC().Format(timestampFormat),
 		IsRead:       email.IsRead,
 		FromEmail:    fromEmail,
 		FromName:     fromName,
 		ToEmail:      toEmail,
 		ToName:       toName,
-		Recipients:   msgRecipients,
+		Addresses:    msgAddresses,
 		EmailSize:    emailSize,
 		HTMLBodySize: htmlBodySize,
 		TextBodySize: textBodySize,
@@ -178,8 +178,8 @@ func (s *Server) buildAttachmentResponse(email *ent.Email, attach *ent.EmailCont
 		ContentType:    attach.MimeType,
 		AttachmentSize: len(attach.Content),
 		HumanSize:      humanize.Bytes(uint64(len(attach.Content))),
-		CreatedAt:      email.CreatedAt.Format(timestampFormat),
-		UpdatedAt:      email.UpdatedAt.Format(timestampFormat),
+		CreatedAt:      email.CreatedAt.UTC().Format(timestampFormat),
+		UpdatedAt:      email.UpdatedAt.UTC().Format(timestampFormat),
 	}
 
 	return &result, nil

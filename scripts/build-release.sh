@@ -15,7 +15,7 @@ build_darwin_arm64() {
 
 build_linux_x86_64() {
     echo "Building linux/x86_64"
-    docker run --platform linux/amd64 --rm -v "$PWD:/src" -w /src golang:1.21.3 \
+    docker run --platform linux/amd64 --rm -v "$PWD:/src" -w /src golang:1.23.0 \
         go build \
             -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$1" \
             -o "data/releases/$1/postbox-linux-x86_64"
@@ -23,7 +23,7 @@ build_linux_x86_64() {
 
 build_linux_arm64() {
     echo "Building linux/aarch64"
-    docker run --platform linux/arm64 --rm -v "$PWD:/src" -w /src golang:1.21.3 \
+    docker run --platform linux/arm64 --rm -v "$PWD:/src" -w /src golang:1.23.0 \
         go build \
             -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$1" \
             -o "data/releases/$1/postbox-linux-aarch64"

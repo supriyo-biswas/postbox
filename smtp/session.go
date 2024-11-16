@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DusanKasan/parsemail"
+	"github.com/k3a/parsemail"
 	ent "github.com/supriyo-biswas/postbox/entities"
 	"github.com/supriyo-biswas/postbox/utils"
 	"gorm.io/gorm"
