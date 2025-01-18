@@ -47,7 +47,7 @@ jobs:
           path: api/dist
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.23'
 
@@ -76,20 +76,20 @@ jobs:
           path: api/dist
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.23'
 
       - name: Build linux/arm64 binary
         run: |
           COMMIT_ID=$(git rev-parse --short HEAD)
-          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-arm64
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-aarch64
 
       - name: Upload linux/arm64 binary
         uses: actions/upload-artifact@v4
         with:
-          name: postbox-linux-arm64
-          path: postbox-linux-arm64
+          name: postbox-linux-aarch64
+          path: postbox-linux-aarch64
 
   build-darwin-arm64:
     runs-on: macos-latest
@@ -105,7 +105,7 @@ jobs:
           path: api/dist
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '1.23'
 
@@ -133,8 +133,8 @@ jobs:
       - name: Download linux/arm64 binary
         uses: actions/download-artifact@v4
         with:
-          name: postbox-linux-arm64
-          path: postbox-linux-arm64
+          name: postbox-linux-aarch64
+          path: postbox-linux-aarch64
 
       - name: Download darwin/arm64 binary
         uses: actions/download-artifact@v4
@@ -143,11 +143,11 @@ jobs:
           path: postbox-darwin-arm64
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            postbox-linux-amd64
-            postbox-linux-arm64
-            postbox-darwin-arm64
+            postbox-linux-amd64/postbox-linux-amd64
+            postbox-linux-aarch64/postbox-linux-aarch64
+            postbox-darwin-arm64/postbox-darwin-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
