@@ -2,9 +2,7 @@ name: Build and Release
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - '*'
+  push: {}
 
 jobs:
   build-frontend:
@@ -52,7 +50,7 @@ jobs:
           go-version: '1.23'
 
       - name: Build linux/amd64 binary
-        run: |
+        run: >-
           COMMIT_ID=$(git rev-parse --short HEAD)
           go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-amd64
 
@@ -80,8 +78,15 @@ jobs:
         with:
           go-version: '1.23'
 
+      - name: Install ARM64 Cross Compiler
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
       - name: Build linux/arm64 binary
-        run: |
+        run: >-
+          GOOS=linux
+          GOARCH=arm64
+          CGO_ENABLED=1
+          CC=aarch64-linux-gnu-gcc
           COMMIT_ID=$(git rev-parse --short HEAD)
           go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-aarch64
 
@@ -110,7 +115,7 @@ jobs:
           go-version: '1.23'
 
       - name: Build darwin/arm64 binary
-        run: |
+        run: >-
           COMMIT_ID=$(git rev-parse --short HEAD)
           go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-darwin-arm64
 
@@ -122,6 +127,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build-linux-amd64, build-linux-arm64, build-darwin-arm64]
     steps:
       - name: Download linux/amd64 binary
