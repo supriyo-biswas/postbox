@@ -51,8 +51,7 @@ jobs:
 
       - name: Build linux/amd64 binary
         run: >-
-          COMMIT_ID=$(git rev-parse --short HEAD)
-          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-amd64
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD)" -o postbox-linux-amd64
 
       - name: Upload linux/amd64 binary
         uses: actions/upload-artifact@v4
@@ -87,8 +86,7 @@ jobs:
           GOARCH=arm64
           CGO_ENABLED=1
           CC=aarch64-linux-gnu-gcc
-          COMMIT_ID=$(git rev-parse --short HEAD)
-          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-linux-aarch64
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD)" -o postbox-linux-aarch64
 
       - name: Upload linux/arm64 binary
         uses: actions/upload-artifact@v4
@@ -116,8 +114,7 @@ jobs:
 
       - name: Build darwin/arm64 binary
         run: >-
-          COMMIT_ID=$(git rev-parse --short HEAD)
-          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=${COMMIT_ID}" -o postbox-darwin-arm64
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD)" -o postbox-darwin-arm64
 
       - name: Upload darwin/arm64 binary
         uses: actions/upload-artifact@v4
