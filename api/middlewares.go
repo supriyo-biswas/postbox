@@ -98,6 +98,8 @@ func (s *Server) bindInbox(next http.Handler) http.Handler {
 				sendError(w, http.StatusBadRequest, unknownAuthTypeMsg)
 				return
 			}
+
+			key = parts[1]
 		} else if queryToken != "" {
 			key = queryToken
 		} else if headerToken != "" {
@@ -105,7 +107,7 @@ func (s *Server) bindInbox(next http.Handler) http.Handler {
 		}
 
 		if key == "" {
-			sendError(w, http.StatusBadRequest, basicAuthFailedMsg)
+			sendError(w, http.StatusBadRequest, missingAuthTokenMsg)
 			return
 		}
 

@@ -68,8 +68,16 @@ func (s *Server) listInboxMessages(w http.ResponseWriter, r *http.Request) {
 		page--
 	}
 
-	tx := s.db.Limit(30).
-		Offset(page * 30).
+	size, err := strconv.Atoi(r.URL.Query().Get("size"))
+	if err != nil {
+		size = 30
+	} else if size <= 1 {
+		sendError(w, http.StatusBadRequest, invalidRequestMsg)
+		return
+	}
+
+	tx := s.db.Limit(size).
+		Offset(page * size).
 		Order("id DESC")
 
 	search := searchSpecial.ReplaceAllString(strings.TrimSpace(r.URL.Query().Get("search")), "%")

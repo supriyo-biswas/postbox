@@ -3,13 +3,20 @@ import ky from 'ky'
 import { format } from 'timeago.js'
 
 Alpine.start()
+Alpine.store('g', {
+  nameAndEmail (name, email) {
+    return name ? `${name} <${email}>` : email
+  }
+})
 
 async function getUserInfo () {
   const response = await ky.get('/web/api/info')
-  const { name: inbox, token } = await response.json()
+  const { name: inbox, token, emails_count: count } = await response.json()
   document.title = `Inbox: ${inbox}`
   Alpine.store('inbox', inbox)
   Alpine.store('token', token)
+  Alpine.store('page', 1)
+  Alpine.store('pages', Math.floor(count / 100) + 1)
 }
 
 function dispatch (name, detail) {
@@ -21,44 +28,40 @@ function handleError (e) {
   dispatch('erroroccurred', { error: e instanceof Error ? e.message : e.toString() })
 }
 
-async function escapeAndLinkify (text) {
-  return text.replace(/[<>&"']|https?:\/\/[^)\]> ]+/g, match => {
+function escape (text) {
+  return text.replace(/[<>&"']/g, match => {
     switch (match) {
       case '<': return '&lt;'
       case '>': return '&gt;'
       case '&': return '&amp;'
       case '"': return '&quot;'
       case '\'': return '&#39;'
-      default: return `<a href="${match}" target="_blank">${match}</a>`
     }
+  })
+}
+
+function linkify (text) {
+  return text.replace(/https?:\/\/[^)\]> ]+/g, match => {
+    return `<a href="${match}" target="_blank" class="hover:underline text-blue-500">${match}</a>`
   })
 }
 
 async function loadMessages () {
   const inbox = Alpine.store('inbox')
   const token = Alpine.store('token')
+  const page = Alpine.store('page')
 
   const messages = []
-  let page = 1
+  const response = await ky.get(`/api/v1/inboxes/${inbox}/messages?page=${page}&size=50`, {
+    headers: { 'Api-Token': token }
+  })
 
-  while (true) {
-    const response = await ky.get(`/api/v1/inboxes/${inbox}/messages?page=${page}`, {
-      headers: { 'Api-Token': token }
-    })
-
-    const currentMessages = await response.json()
-    if (currentMessages.length === 0 || page > 30) {
-      break
-    }
-
-    page++
-
-    for (const message of currentMessages) {
-      message.created_at = format(new Date(message.created_at))
-      message.updated_at = format(new Date(message.updated_at))
-      message.sent_at = format(new Date(message.sent_at))
-      messages.push(message)
-    }
+  const currentMessages = await response.json()
+  for (const message of currentMessages) {
+    message.created_at = format(new Date(message.created_at))
+    message.updated_at = format(new Date(message.updated_at))
+    message.sent_at = format(new Date(message.sent_at))
+    messages.push(message)
   }
 
   dispatch('messagesloaded', { messages })
@@ -71,20 +74,26 @@ document.addEventListener('openmessage', async event => {
     const token = Alpine.store('token')
 
     const messageUrl = `/api/v1/inboxes/${inbox}/messages/${id}`
+    const headers = { 'Api-Token': token }
+
     const responses = await Promise.allSettled([
-      ky.get(`${messageUrl}/body.txt`, { headers: { 'Api-Token': token } }),
-      ky.patch(messageUrl, { headers: { 'Api-Token': token }, json: { message: { is_read: true } } })
+      ky.get(`${messageUrl}/body.txt`, { headers }),
+      ky.get(`${messageUrl}/attachments`, { headers }),
+      ky.patch(messageUrl, { headers, json: { message: { is_read: true } } })
     ])
 
-    if (responses[0].status === 'rejected') {
-      throw responses[0].reason
+    const rejection = responses.find(response => response.status === 'rejected')
+    if (rejection) {
+      throw rejection.reason
     }
 
     const text = await responses[0].value.text()
-    dispatch('messageloaded', escapeAndLinkify(text))
+    const attachments = await responses[1].value.json()
+    dispatch('messageloaded', { body: linkify(escape(text)), attachments })
   } catch (e) {
     handleError(e)
   }
 })
 
 getUserInfo().then(loadMessages).catch(handleError)
+window.addEventListener('loadmessages', loadMessages)

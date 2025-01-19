@@ -11,7 +11,7 @@
 
 <body class="bg-gray-100" x-data="{ mode: 'loading', messages: [], currentMessage: null, error: '' }"
     @messagesloaded.window="mode = 'messages-list'; messages = $event.detail.messages"
-    @messageloaded.window="mode = 'view-message'; currentMessage.body = $event.detail"
+    @messageloaded.window="mode = 'view-message'; currentMessage.body = $event.detail.body; currentMessage.attachments = $event.detail.attachments"
     @erroroccurred.window="mode = 'error'; error = $event.detail.error;">
     <div class="container mx-auto p-4">
         <div class="bg-white shadow-md">
@@ -64,15 +64,68 @@
                             </div>
                         </div>
                     </template>
+
+                    <div class="grid grid-cols-2 p-4 font-bold bg-gray-200">
+                        <div class="x-cloak">
+                            Page <span x-text="$store.page"></span> of <span x-text="$store.pages"></span>
+                        </div>
+                        <div class="col-span-1 flex justify-end x-cloak">
+                            <div :class="'text-white bg-gray-600 border-2 rounded-md px-2 mr-2 ' + ($store.page === 1 ? 'opacity-50 cursor-not-allowed hover:bg-gray-500' : 'cursor-pointer')"
+                                @click="if ($store.page > 1) { $store.page--; $dispatch('loadmessages', $store.page); }">
+                                &#x2039;
+                            </div>
+                            <div :class="'text-white bg-gray-600 border-2 rounded-md px-2 ' + ($store.page === $store.pages ? 'opacity-50 cursor-not-allowed hover:bg-gray-500' : 'cursor-pointer')"
+                                @click="if ($store.page < $store.pages) { $store.page++; $dispatch('loadmessages', $store.page); }">
+                                &#x203a;
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </template>
             <template x-if="mode === 'view-message'">
                 <div>
-                    <div class="flex justify-around p-4">
+                    <div class="flex justify-between p-4">
                         <span x-text="currentMessage.subject || '(No subject)'"></span>
-                        <span class="select-none text-xs" @click="mode = 'messages-list'">&#x2715;</span>
+                        <div class="select-none text-xs border-0 rounded-md px-2 flex items-center bg-red-400 hover:bg-red-500 text-white"
+                            @click="mode = 'messages-list'">
+                            &#x2715;
+                        </div>
                     </div>
-                    <div class="p-4 font-mono break-words" x-html="currentMessage.body"></div>
+                    <div class="grid grid-cols-4 p-4">
+                        <div class="font-bold">From:</div>
+                        <div class="col-span-3"
+                            x-text="$store.g.nameAndEmail(currentMessage.from_name, currentMessage.from_email)"></div>
+                        <div class="font-bold">To:</div>
+                        <div class="col-span-3"
+                            x-text="currentMessage.addresses.to.map(({ name, address }) => $store.g.nameAndEmail(name, address)).join(', ')">
+                        </div>
+                        <template x-if="currentMessage.addresses.cc.length > 0">
+                            <div class="font-bold">Cc:</div>
+                        </template>
+                        <template x-if="currentMessage.addresses.cc.length > 0">
+                            <div class="col-span-3"
+                                x-text="currentMessage.addresses.cc.map(({ name, address }) => $store.g.nameAndEmail(name, address)).join(', ')">
+                            </div>
+                        </template>
+                        <template x-if="currentMessage.addresses.bcc.length > 0">
+                            <div class="font-bold">Bcc:</div>
+                        </template>
+                        <template x-if="currentMessage.addresses.bcc.length > 0">
+                            <div class="col-span-3"
+                                x-text="currentMessage.addresses.bcc.map(({ name, address }) => $store.g.nameAndEmail(name, address)).join(', ')">
+                            </div>
+                        </template>
+                    </div>
+                    <pre class="p-4 font-mono whitespace-pre-wrap break-words" x-html="currentMessage.body"></pre>
+                    <template x-if="currentMessage.attachments.length > 0">
+                        <div class="p-4">
+                            <div class="font-bold">Attachments</div>
+                            <template x-for="attachment in currentMessage.attachments">
+                                <a :href="'/api/v1/inboxes/' + $store.inbox + '/messages/' + currentMessage.id + '/attachments/' + attachment.id + '/download?api_token=' + $store.token"
+                                    target="_blank" class="block text-blue-500 hover:underline"
+                                    x-text="attachment.filename || '(Unnamed attachment)'"></a>
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>
