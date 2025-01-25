@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/k3a/parsemail"
 	ent "github.com/supriyo-biswas/postbox/entities"
+	"github.com/supriyo-biswas/postbox/parsemail"
 	"github.com/supriyo-biswas/postbox/utils"
 	"gorm.io/gorm"
 )
@@ -111,20 +111,20 @@ func (s *session) resetState() {
 	s.rcptTo = nil
 }
 
-func (s *session) handleRset(args string) error {
+func (s *session) handleRset() error {
 	s.resetState()
 	return s.send(okResp)
 }
 
-func (s *session) handleNoop(args string) error {
+func (s *session) handleNoop() error {
 	return s.send(okResp)
 }
 
-func (s *session) handleHelp(args string) error {
+func (s *session) handleHelp() error {
 	return s.send(helpResp)
 }
 
-func (s *session) handleStartTls(args string) error {
+func (s *session) handleStartTls() error {
 	if s.cert == nil {
 		return s.send(cmdNotImplResp)
 	}
@@ -296,7 +296,7 @@ func (s *session) saveEmail(data []byte, inbox int64) error {
 	return s.db.Create(&email).Error
 }
 
-func (s *session) handleData(args string) error {
+func (s *session) handleData() error {
 	if !s.heloDone {
 		return s.send(heloReqdResp)
 	}
@@ -309,7 +309,7 @@ func (s *session) handleData(args string) error {
 		return s.send(mailFromRequiredResp)
 	}
 
-	if s.rcptTo == nil || len(s.rcptTo) == 0 {
+	if len(s.rcptTo) == 0 {
 		return s.send(rcptToRequiredResp)
 	}
 
@@ -491,26 +491,26 @@ outer:
 		case "AUTH":
 			err = s.handleAuth(args)
 		case "DATA":
-			err = s.handleData(args)
+			err = s.handleData()
 		case "EHLO":
 			err = s.handleEhlo(args)
 		case "HELO":
 			err = s.handleHelo(args)
 		case "HELP":
-			err = s.handleHelp(args)
+			err = s.handleHelp()
 		case "MAIL":
 			err = s.handleMail(args)
 		case "NOOP":
-			err = s.handleNoop(args)
+			err = s.handleNoop()
 		case "QUIT":
 			s.send(byeResp)
 			break outer
 		case "RCPT":
 			err = s.handleRcpt(args)
 		case "RSET":
-			err = s.handleRset(args)
+			err = s.handleRset()
 		case "STARTTLS":
-			err = s.handleStartTls(args)
+			err = s.handleStartTls()
 		default:
 			err = s.send(cmdNotImplResp)
 		}

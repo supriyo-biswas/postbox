@@ -40,9 +40,13 @@ function escape (text) {
   })
 }
 
-function linkify (text) {
-  return text.replace(/https?:\/\/[^)\]> ]+/g, match => {
-    return `<a href="${match}" target="_blank" class="hover:underline text-blue-500">${match}</a>`
+function escapeAndLinkify (text) {
+  return text.replace(/[<>&"']|\bhttps?:\/\/[^>)\s]+/g, match => {
+    if (match.startsWith('http')) {
+      return `<a href="${escape(match)}" class="text-blue-500 hover:underline">${escape(match)}</a>`
+    }
+
+    return escape(match)
   })
 }
 
@@ -89,7 +93,7 @@ document.addEventListener('openmessage', async event => {
 
     const text = await responses[0].value.text()
     const attachments = await responses[1].value.json()
-    dispatch('messageloaded', { body: linkify(escape(text)), attachments })
+    dispatch('messageloaded', { body: escapeAndLinkify(text), attachments })
   } catch (e) {
     handleError(e)
   }
