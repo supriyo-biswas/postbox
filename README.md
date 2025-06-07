@@ -14,20 +14,33 @@ Postbox is an email testing server for developers. It acts as a local SMTP serve
 
 ## Quick start
 
-1. Download the latest binary for your platform (currently linux/amd64, linux/aarch64, darwin/amd64) are supported:
+1. Download the latest binary for your platform (currently linux/amd64, linux/aarch64, darwin/amd64 are supported) and start the server:
+
 ```bash
-curl -sSLfo postbox "https://github.com/supriyo-biswas/postbox/releases/download/$(curl -sSL https://api.github.com/repos/supriyo-biswas/postbox/releases | sed -nr 's/.*"tag_name": "(.*)".*/\1/gp' | head -n1)/postbox-$(uname -sm | tr 'A-Z ' 'a-z-')" && chmod +x postbox
-```
-2. Start the server:
-```bash
+curl -sSLfo postbox "https://github.com/supriyo-biswas/postbox/releases/download/$(
+    curl -sSL https://api.github.com/repos/supriyo-biswas/postbox/releases |
+    sed -nr 's/.*"tag_name": "(.*)".*/\1/gp' |
+    head -n1
+)/postbox-$(uname -sm | tr 'A-Z ' 'a-z-')"
+
+chmod +x postbox
 ./postbox server
 ```
-3. Send an email to the server by configuring your application to use the following SMTP settings:
+
+Alternatively, use the Docker image:
+
+```bash
+docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib -it supriyob/postbox
+```
+
+2. Send an email to the server by configuring your application to use the following SMTP settings:
   - Host: localhost
   - Port: 8025
   - SMTP Username/Password: `postbox-default/postbox-default`
   - SSL/TLS: None
-4. Authenticate as `postbox-default/postbox-default` on http://localhost:8080 or use the API server to fetch inboxes, emails and attachments:
+
+3. Authenticate as `postbox-default/postbox-default` on http://localhost:8080 or use the API server to fetch inboxes, emails and attachments:
+
 ```bash
 curl localhost:8080/api/v1/inboxes/1/messages -H "Api-Token: <token>"
 ```
@@ -42,6 +55,12 @@ By default, Postbox creates a single inbox called `postbox-default` with the ID 
 
 ```bash
 ./postbox inbox add my-inbox
+```
+
+Or on docker, use:
+
+```bash
+docker exec postbox /usr/bin/postbox inbox add my-inbox
 ```
 
 This will print the details of the new inbox like this:
@@ -81,7 +100,9 @@ If you want to configure STARTTLS support for the SMTP server, add HTTPS for the
     max_age = 7 # Max age of the log file, in days
 ```
 
-Place this configuration file in `~/.config/postbox/config.toml` on Linux, or `~/Library/Application Support/postbox/config.toml` on macOS. Alternatively, pass the configuration file in each invocation:
+Place this configuration file in `~/.config/postbox/config.toml` on Linux, `~/Library/Application Support/postbox/config.toml` on macOS, or in `$PWD/postbox/config.toml` if using the Docker image.
+
+Alternatively, pass the configuration file in each invocation:
 
 ```bash
 ./postbox server --config /path/to/config.toml

@@ -31,7 +31,7 @@ jobs:
           name: frontend-dist
           path: api/dist
 
-  build-linux-amd64:
+  build-linux-x86_64:
     runs-on: ubuntu-latest
     needs: build-frontend
     steps:
@@ -49,15 +49,21 @@ jobs:
         with:
           go-version: '1.23'
 
+      - name: Install musl-tools for static linking
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
       - name: Build linux/amd64 binary
         run: >-
-          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD)" -o postbox-linux-amd64
+          CC=musl-gcc
+          CGO_ENABLED=1
+          GO_LDFLAGS=--static
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD) -linkmode external -extldflags -static" -o postbox-linux-x86_64
 
       - name: Upload linux/amd64 binary
         uses: actions/upload-artifact@v4
         with:
-          name: postbox-linux-amd64
-          path: postbox-linux-amd64
+          name: postbox-linux-x86_64
+          path: postbox-linux-x86_64
 
   build-linux-arm64:
     runs-on: ubuntu-latest
@@ -77,8 +83,8 @@ jobs:
         with:
           go-version: '1.23'
 
-      - name: Install ARM64 Cross Compiler
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Install ARM64 Cross Compiler for musl
+        run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
 
       - name: Build linux/arm64 binary
         run: >-
@@ -86,7 +92,8 @@ jobs:
           GOARCH=arm64
           CGO_ENABLED=1
           CC=aarch64-linux-gnu-gcc
-          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD)" -o postbox-linux-aarch64
+          GO_LDFLAGS=--static
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD) -linkmode external -extldflags -static" -o postbox-linux-aarch64
 
       - name: Upload linux/arm64 binary
         uses: actions/upload-artifact@v4
@@ -125,13 +132,29 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-linux-amd64, build-linux-arm64, build-darwin-arm64]
+    environment: default
+    needs: [build-linux-x86_64, build-linux-arm64, build-darwin-arm64]
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Clone source code
+        uses: actions/checkout@v4
+
       - name: Download linux/amd64 binary
         uses: actions/download-artifact@v4
         with:
-          name: postbox-linux-amd64
-          path: postbox-linux-amd64
+          name: postbox-linux-x86_64
+          path: postbox-linux-x86_64
 
       - name: Download linux/arm64 binary
         uses: actions/download-artifact@v4
@@ -145,11 +168,25 @@ jobs:
           name: postbox-darwin-arm64
           path: postbox-darwin-arm64
 
+      - name: Copy under alternative names
+        run: |
+          cp postbox-linux-x86_64/postbox-linux-x86_64 postbox-linux-amd64
+          cp postbox-linux-aarch64/postbox-linux-aarch64 postbox-linux-arm64
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./.github/workflows/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: supriyob/postbox:latest,supriyob/postbox:${{ github.ref_name }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            postbox-linux-amd64/postbox-linux-amd64
+            postbox-linux-x86_64/postbox-linux-x86_64
             postbox-linux-aarch64/postbox-linux-aarch64
             postbox-darwin-arm64/postbox-darwin-arm64
         env:
