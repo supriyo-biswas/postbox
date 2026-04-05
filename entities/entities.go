@@ -27,7 +27,7 @@ type Inbox struct {
 	Id        int64   `gorm:"primaryKey;not null"`
 	Name      string  `gorm:"unique;not null"`
 	SmtpPass  string  `gorm:"not null"`
-	ApiKey    string  `gorm:"unique;not null"`
+	ApiKey    string  `gorm:"not null"`
 	Emails    []Email `gorm:"constraint:OnDelete:CASCADE;"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
