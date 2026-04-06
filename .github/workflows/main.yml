@@ -47,7 +47,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
 
       - name: Install musl-tools for static linking
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -81,7 +81,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
 
       - name: Install ARM64 Cross Compiler for musl
         run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
@@ -117,7 +117,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.25'
 
       - name: Build darwin/arm64 binary
         run: >-
