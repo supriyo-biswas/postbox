@@ -1,6 +1,9 @@
+import '@fortawesome/fontawesome-free/css/all.css';
 import Alpine from 'alpinejs'
 import ky from 'ky'
 import { format } from 'timeago.js'
+
+const pageSize = 50
 
 Alpine.start()
 Alpine.store('g', {
@@ -9,14 +12,27 @@ Alpine.store('g', {
   }
 })
 
+const api = ky.create({
+  hooks: {
+    beforeRequest: [
+      request => {
+        const token = Alpine.store('token')
+        if (token && /^https?:\/\/[^/]+\/api\//.test(request.url)) {
+          request.headers.set('Api-Token', token)
+        }
+      }
+    ]
+  }
+})
+
 async function getUserInfo () {
-  const response = await ky.get('/web/api/info')
+  const response = await api.get('/web/api/info')
   const { name: inbox, token, emails_count: count } = await response.json()
   document.title = `Inbox: ${inbox}`
   Alpine.store('inbox', inbox)
   Alpine.store('token', token)
   Alpine.store('page', 1)
-  Alpine.store('pages', Math.floor(count / 100) + 1)
+  Alpine.store('pages', Math.floor(count / pageSize) + 1)
 }
 
 function dispatch (name, detail) {
@@ -52,13 +68,10 @@ function escapeAndLinkify (text) {
 
 async function loadMessages () {
   const inbox = Alpine.store('inbox')
-  const token = Alpine.store('token')
   const page = Alpine.store('page')
 
   const messages = []
-  const response = await ky.get(`/api/v1/inboxes/${inbox}/messages?page=${page}&size=50`, {
-    headers: { 'Api-Token': token }
-  })
+  const response = await api.get(`/api/v1/inboxes/${inbox}/messages?page=${page}&size=${pageSize}`)
 
   const currentMessages = await response.json()
   for (const message of currentMessages) {
@@ -75,15 +88,11 @@ document.addEventListener('openmessage', async event => {
   try {
     const id = event.detail
     const inbox = Alpine.store('inbox')
-    const token = Alpine.store('token')
-
     const messageUrl = `/api/v1/inboxes/${inbox}/messages/${id}`
-    const headers = { 'Api-Token': token }
-
     const responses = await Promise.allSettled([
-      ky.get(`${messageUrl}/body.txt`, { headers }),
-      ky.get(`${messageUrl}/attachments`, { headers }),
-      ky.patch(messageUrl, { headers, json: { message: { is_read: true } } })
+      api.get(`${messageUrl}/body.txt`),
+      api.get(`${messageUrl}/attachments`),
+      api.patch(messageUrl, { json: { message: { is_read: true } } })
     ])
 
     const rejection = responses.find(response => response.status === 'rejected')
@@ -94,6 +103,16 @@ document.addEventListener('openmessage', async event => {
     const text = await responses[0].value.text()
     const attachments = await responses[1].value.json()
     dispatch('messageloaded', { body: escapeAndLinkify(text), attachments })
+  } catch (e) {
+    handleError(e)
+  }
+})
+
+document.addEventListener('deletemessages', async () => {
+  try {
+    const inbox = Alpine.store('inbox')
+    await api.patch(`/api/v1/inboxes/${inbox}/clean`)
+    loadMessages()
   } catch (e) {
     handleError(e)
   }
