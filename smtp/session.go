@@ -250,11 +250,12 @@ func (s *session) saveEmail(data []byte, inbox int64) error {
 
 	for _, a := range e.Attachments {
 		if data, err := io.ReadAll(a.Data); err == nil {
+			filename := strings.Split(a.Filename, "/")
 			content = append(content, ent.EmailContent{
 				Relationship: ent.RelAttach,
 				Content:      data,
 				MimeType:     a.ContentType,
-				FileName:     a.Filename,
+				FileName:     filename[len(filename)-1],
 				Size:         len(data),
 			})
 		} else {
