@@ -9,9 +9,9 @@
     <script type="module" src="./app.js"></script>
 </head>
 
-<body class="bg-gray-100" x-data="{ mode: 'loading', messages: [], currentMessage: null, error: '' }"
+<body class="bg-gray-100" x-data="{ mode: 'loading', messages: [], currentMessage: null, bodyMode: 'text', error: '' }"
     @messagesloaded.window="mode = 'messages-list'; messages = $event.detail.messages"
-    @messageloaded.window="mode = 'view-message'; currentMessage.body = $event.detail.body; currentMessage.attachments = $event.detail.attachments"
+    @messageloaded.window="mode = 'view-message'; currentMessage.textBody = $event.detail.textBody; currentMessage.htmlBody = $event.detail.htmlBody; currentMessage.attachments = $event.detail.attachments"
     @erroroccurred.window="mode = 'error'; error = $event.detail.error;">
     <div class="container mx-auto p-4">
         <div class="bg-white shadow-md">
@@ -42,7 +42,7 @@
 
                     <template x-for="message in messages">
                         <div class="grid grid-cols-4 gap-4 p-4 hover:bg-gray-50 cursor-pointer"
-                            @click="$dispatch('openmessage', message.id); currentMessage = message; mode = 'loading'; currentMessage.is_read = true;">
+                            @click="$dispatch('openmessage', message.id); currentMessage = message; bodyMode = 'text'; mode = 'loading'; currentMessage.is_read = true;">
                             <div class="overflow-hidden overflow-ellipsis text-nowrap">
                                 <span :class="message.is_read ? '' : 'font-semibold'"
                                     x-text="message.from_name || message.from_email"></span>
@@ -69,6 +69,10 @@
                             <div :class="'text-white bg-gray-600 hover:bg-gray-500 border-2 rounded-md px-2 mr-2 ' + ($store.page === $store.pages ? 'opacity-50 cursor-not-allowed ' : 'cursor-pointer')"
                                 @click="if ($store.page < $store.pages) { $store.page++; $dispatch('loadmessages', $store.page); }">
                                 <i class="fa-solid fa-chevron-right"></i>
+                            </div>
+                            <div class="text-white bg-green-600 hover:bg-green-500 border-2 rounded-md px-2 mr-2 cursor-pointer"
+                                @click="mode = 'loading'; $dispatch('loadmessages', $store.page);">
+                                <i class="fa-solid fa-rotate-right"></i>
                             </div>
                             <div :class="'text-white bg-red-500 hover:bg-red-400 border-2 rounded-md px-2 ' + (messages.length === 0 ? 'opacity-50 cursor-not-allowed ' : 'cursor-pointer')"
                                 @click="if (confirm('Are you sure you want to delete all messages?')) { mode = 'loading'; $dispatch('deletemessages'); }">
@@ -115,8 +119,25 @@
                                     </div>
                                 </template>
                             </div>
-                            <pre class="p-4 font-mono whitespace-pre-wrap break-words"
-                                x-html="currentMessage.body"></pre>
+                            <div class="px-4 flex gap-2 border-b">
+                                <button class="px-3 py-1 rounded-t-md border border-b-0"
+                                    :class="bodyMode === 'text' ? 'bg-white font-semibold' : 'bg-gray-100 text-gray-600'"
+                                    @click="bodyMode = 'text'">
+                                    Text
+                                </button>
+                                <button class="px-3 py-1 rounded-t-md border border-b-0"
+                                    :class="bodyMode === 'html' ? 'bg-white font-semibold' : 'bg-gray-100 text-gray-600'"
+                                    @click="bodyMode = 'html'">
+                                    HTML
+                                </button>
+                            </div>
+                            <template x-if="bodyMode === 'text'">
+                                <pre class="p-4 font-mono whitespace-pre-wrap break-words"
+                                    x-html="currentMessage.textBody"></pre>
+                            </template>
+                            <template x-if="bodyMode === 'html'">
+                                <iframe class="w-full min-h-96 p-4" :srcdoc="currentMessage.htmlBody"></iframe>
+                            </template>
                             <template x-if="currentMessage.attachments.length > 0">
                                 <div class="p-4">
                                     <div class="font-bold">Attachments</div>

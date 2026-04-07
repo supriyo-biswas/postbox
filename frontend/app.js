@@ -73,8 +73,13 @@ document.addEventListener('openmessage', async event => {
   try {
     const id = event.detail
     const messageUrl = `messages/${id}`
+
+    // Validate message existence; this should fail fast for deleted/missing messages.
+    await api.get(messageUrl)
+
     const responses = await Promise.allSettled([
-      api.get(`${messageUrl}/body.txt`),
+      api.get(`${messageUrl}/body.txt`, { throwHttpErrors: false }),
+      api.get(`${messageUrl}/body.html`, { throwHttpErrors: false }),
       api.get(`${messageUrl}/attachments`),
       api.patch(messageUrl, { json: { message: { is_read: true } } })
     ])
@@ -84,9 +89,30 @@ document.addEventListener('openmessage', async event => {
       throw rejection.reason
     }
 
-    const text = await responses[0].value.text()
-    const attachments = await responses[1].value.json()
-    dispatch('messageloaded', { body: escapeAndLinkify(text), attachments })
+    let text = 'Text body unavailable'
+    if (responses[0].status === 'fulfilled') {
+      if (responses[0].value.ok) {
+        text = await responses[0].value.text()
+      } else if (responses[0].value.status !== 404) {
+        throw new Error(`failed to load text body (${responses[0].value.status})`)
+      }
+    }
+
+    let html = 'HTML body unavailable'
+    if (responses[1].status === 'fulfilled') {
+      if (responses[1].value.ok) {
+        html = await responses[1].value.text()
+      } else if (responses[1].value.status !== 404) {
+        throw new Error(`failed to load html body (${responses[1].value.status})`)
+      }
+    }
+
+    const attachments = await responses[2].value.json()
+    dispatch('messageloaded', {
+      textBody: escapeAndLinkify(text),
+      htmlBody: html,
+      attachments
+    })
   } catch (e) {
     handleError(e)
   }

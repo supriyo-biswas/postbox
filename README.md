@@ -5,7 +5,7 @@ Postbox is an email testing server for developers. It acts as a local SMTP serve
 ## Features
 
 - Single binary with no dependencies
-- Web UI to view emails (WIP)
+- Web UI to view emails
 - Multiple inboxes to segregate emails by project
 - Support for HTML emails and attachments
 - Support for STARTTLS and HTTPS
