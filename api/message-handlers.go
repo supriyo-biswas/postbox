@@ -142,7 +142,7 @@ func (s *Server) listAttachments(w http.ResponseWriter, r *http.Request) {
 	email := r.Context().Value(messageContextKey).(*ent.Email)
 
 	var attachments []ent.EmailContent
-	tx := s.db.Where(
+	tx := s.db.Select("id, relationship, email_id, mime_type, file_name, size").Where(
 		"email_id = ? and relationship in ?",
 		email.Id,
 		[]ent.RelType{ent.RelAttach, ent.RelEmbedded},
@@ -182,7 +182,16 @@ func (s *Server) getAttachment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) downloadAttachment(w http.ResponseWriter, r *http.Request) {
-	content := r.Context().Value(attachmentContextKey).(*ent.EmailContent)
+	meta := r.Context().Value(attachmentContextKey).(*ent.EmailContent)
+
+	var content ent.EmailContent
+	if err := s.db.First(&content, meta.Id).Error; err != nil {
+		log.Printf("failed to get attachment content %d: %s", meta.Id, err)
+		sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
 	w.Header().Set("Content-Type", content.MimeType)
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+content.FileName+"\"")
 	w.Write(content.Content)
 }

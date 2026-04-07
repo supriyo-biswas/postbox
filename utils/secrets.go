@@ -17,7 +17,7 @@ const (
 )
 
 var blake3Pool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return blake3.New(32, nil)
 	},
 }

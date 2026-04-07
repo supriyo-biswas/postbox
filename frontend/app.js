@@ -1,4 +1,4 @@
-import '@fortawesome/fontawesome-free/css/all.css';
+import '@fortawesome/fontawesome-free/css/all.css'
 import Alpine from 'alpinejs'
 import ky from 'ky'
 import { format } from 'timeago.js'
@@ -12,25 +12,12 @@ Alpine.store('g', {
   }
 })
 
-const api = ky.create({
-  hooks: {
-    beforeRequest: [
-      request => {
-        const token = Alpine.store('token')
-        if (token && /^https?:\/\/[^/]+\/api\//.test(request.url)) {
-          request.headers.set('Api-Token', token)
-        }
-      }
-    ]
-  }
-})
+const api = ky.create({ prefixUrl: '/web/api' })
 
 async function getUserInfo () {
-  const response = await api.get('/web/api/info')
-  const { name: inbox, token, emails_count: count } = await response.json()
+  const response = await api.get('info')
+  const { username: inbox, emails_count: count } = await response.json()
   document.title = `Inbox: ${inbox}`
-  Alpine.store('inbox', inbox)
-  Alpine.store('token', token)
   Alpine.store('page', 1)
   Alpine.store('pages', Math.floor(count / pageSize) + 1)
 }
@@ -67,11 +54,9 @@ function escapeAndLinkify (text) {
 }
 
 async function loadMessages () {
-  const inbox = Alpine.store('inbox')
   const page = Alpine.store('page')
-
   const messages = []
-  const response = await api.get(`/api/v1/inboxes/${inbox}/messages?page=${page}&size=${pageSize}`)
+  const response = await api.get(`messages?page=${page}&size=${pageSize}`)
 
   const currentMessages = await response.json()
   for (const message of currentMessages) {
@@ -87,8 +72,7 @@ async function loadMessages () {
 document.addEventListener('openmessage', async event => {
   try {
     const id = event.detail
-    const inbox = Alpine.store('inbox')
-    const messageUrl = `/api/v1/inboxes/${inbox}/messages/${id}`
+    const messageUrl = `messages/${id}`
     const responses = await Promise.allSettled([
       api.get(`${messageUrl}/body.txt`),
       api.get(`${messageUrl}/attachments`),
@@ -110,13 +94,12 @@ document.addEventListener('openmessage', async event => {
 
 document.addEventListener('deletemessages', async () => {
   try {
-    const inbox = Alpine.store('inbox')
-    await api.patch(`/api/v1/inboxes/${inbox}/clean`)
-    loadMessages()
+    await api.patch('clean')
+    await getUserInfo().then(loadMessages)
   } catch (e) {
     handleError(e)
   }
 })
 
 getUserInfo().then(loadMessages).catch(handleError)
-window.addEventListener('loadmessages', loadMessages)
+document.addEventListener('loadmessages', loadMessages)

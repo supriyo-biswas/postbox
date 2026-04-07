@@ -94,11 +94,6 @@ type Attachment struct {
 	HumanSize      string  `json:"attachment_human_size"`
 }
 
-type WebInbox struct {
-	*Inbox
-	Token string `json:"token"`
-}
-
 type Error struct {
 	Message string `json:"message"`
 }
@@ -114,7 +109,7 @@ func sendError(w http.ResponseWriter, status int, msg string) {
 	w.Write(b)
 }
 
-func sendResponse(w http.ResponseWriter, status int, data interface{}) {
+func sendResponse(w http.ResponseWriter, status int, data any) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		log.Printf("failed to marshal response: %s", err)
@@ -122,7 +117,7 @@ func sendResponse(w http.ResponseWriter, status int, data interface{}) {
 		return
 	}
 
-	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	w.Write(b)
 }

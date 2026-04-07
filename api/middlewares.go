@@ -181,7 +181,7 @@ func (s *Server) bindAttachment(h http.Handler) http.Handler {
 		}
 
 		content := &ent.EmailContent{}
-		tx := s.db.Where(
+		tx := s.db.Select("id, relationship, email_id, mime_type, file_name, size").Where(
 			"email_id = ? AND id = ? AND relationship in ?",
 			email.Id,
 			attachmentId,

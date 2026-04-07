@@ -71,7 +71,7 @@
                                 <i class="fa-solid fa-chevron-right"></i>
                             </div>
                             <div :class="'text-white bg-red-500 hover:bg-red-400 border-2 rounded-md px-2 ' + (messages.length === 0 ? 'opacity-50 cursor-not-allowed ' : 'cursor-pointer')"
-                                @click="if (confirm('Are you sure you want to delete all messages?')) { mode = 'loading'; $dispatch('deletemessages'); console.log($store.messages); }">
+                                @click="if (confirm('Are you sure you want to delete all messages?')) { mode = 'loading'; $dispatch('deletemessages'); }">
                                 <i class="fa-solid fa-trash"></i>
                             </div>
                         </div>
@@ -121,7 +121,7 @@
                                 <div class="p-4">
                                     <div class="font-bold">Attachments</div>
                                     <template x-for="attachment in currentMessage.attachments">
-                                        <a :href="'/api/v1/inboxes/' + $store.inbox + '/messages/' + currentMessage.id + '/attachments/' + attachment.id + '/download?api_token=' + $store.token"
+                                        <a :href="'/web/api/messages/' + currentMessage.id + '/attachments/' + attachment.id + '/download'"
                                             target="_blank" class="block text-blue-500 hover:underline"
                                             x-text="attachment.filename || '(Unnamed attachment)'"></a>
                                 </div>

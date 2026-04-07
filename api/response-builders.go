@@ -157,11 +157,12 @@ func (s *Server) buildInboxResponse(inbox *ent.Inbox) (*Inbox, error) {
 
 func (s *Server) buildAttachmentResponse(email *ent.Email, attach *ent.EmailContent) (*Attachment, error) {
 	var attachType string
-	if attach.Relationship == ent.RelAttach {
+	switch attach.Relationship {
+	case ent.RelAttach:
 		attachType = "attachment"
-	} else if attach.Relationship == ent.RelEmbedded {
+	case ent.RelEmbedded:
 		attachType = "inline"
-	} else {
+	default:
 		return nil, errors.New("invalid attachment type")
 	}
 
@@ -176,8 +177,8 @@ func (s *Server) buildAttachmentResponse(email *ent.Email, attach *ent.EmailCont
 		Filename:       filename,
 		AttachmentType: attachType,
 		ContentType:    attach.MimeType,
-		AttachmentSize: len(attach.Content),
-		HumanSize:      humanize.Bytes(uint64(len(attach.Content))),
+		AttachmentSize: attach.Size,
+		HumanSize:      humanize.Bytes(uint64(attach.Size)),
 		CreatedAt:      email.CreatedAt.UTC().Format(timestampFormat),
 		UpdatedAt:      email.UpdatedAt.UTC().Format(timestampFormat),
 	}
