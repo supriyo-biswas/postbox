@@ -30,8 +30,10 @@ chmod +x postbox
 Alternatively, use the Docker image:
 
 ```bash
-docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib -it supriyob/postbox
+docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib --read-only supriyob/postbox
 ```
+
+For Windows, download the `postbox-windows-amd64.exe` binary from the releases page and run it from the command prompt.
 
 2. Send an email to the server by configuring your application to use the following SMTP settings:
   - Host: localhost
@@ -42,7 +44,7 @@ docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib 
 3. Authenticate as `postbox-default/postbox-default` on http://localhost:8080 or use the API server to fetch inboxes, emails and attachments:
 
 ```bash
-curl localhost:8080/api/v1/inboxes/1/messages -H "Api-Token: <token>"
+curl localhost:8080/api/v1/inboxes/1/messages -H "Api-Token: postbox-default"
 ```
 
 For details on the API, see the [API documentation](https://api-docs.mailtrap.io/docs/mailtrap-api-docs/5tjdeg9545058-mailtrap-api). The inbox, email/message and attachment APIs are supported.

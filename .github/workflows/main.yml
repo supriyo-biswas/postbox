@@ -2,7 +2,9 @@ name: Build and Release
 
 on:
   workflow_dispatch:
-  push: {}
+  push:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   build-frontend:
