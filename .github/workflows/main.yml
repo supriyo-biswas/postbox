@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install pnpm
         run: npm install -g pnpm
@@ -26,7 +26,7 @@ jobs:
         run: npm run build
 
       - name: Upload frontend assets
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: api/dist
@@ -36,16 +36,16 @@ jobs:
     needs: build-frontend
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download frontend assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: api/dist
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25'
 
@@ -60,7 +60,7 @@ jobs:
           go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD) -linkmode external -extldflags -static" -o postbox-linux-x86_64
 
       - name: Upload linux/amd64 binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: postbox-linux-x86_64
           path: postbox-linux-x86_64
@@ -70,16 +70,16 @@ jobs:
     needs: build-frontend
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download frontend assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: api/dist
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25'
 
@@ -96,7 +96,7 @@ jobs:
           go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD) -linkmode external -extldflags -static" -o postbox-linux-aarch64
 
       - name: Upload linux/arm64 binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: postbox-linux-aarch64
           path: postbox-linux-aarch64
@@ -106,16 +106,16 @@ jobs:
     needs: build-frontend
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download frontend assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: api/dist
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25'
 
@@ -124,49 +124,84 @@ jobs:
           go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$(git describe --exact-match --tags 2>/dev/null || git rev-parse --short HEAD)" -o postbox-darwin-arm64
 
       - name: Upload darwin/arm64 binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: postbox-darwin-arm64
           path: postbox-darwin-arm64
+
+  build-windows-amd64:
+    runs-on: windows-latest
+    needs: build-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download frontend assets
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-dist
+          path: api/dist
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+      - name: Build windows/amd64 binary
+        run: >
+          go build -tags release -ldflags "-X github.com/supriyo-biswas/postbox/cmd.version=$((git describe --exact-match --tags 2>/dev/null) -or (git rev-parse --short HEAD))" -o postbox-windows-amd64.exe
+        shell: bash
+
+      - name: Upload windows/amd64 binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: postbox-windows-amd64
+          path: postbox-windows-amd64.exe
 
   release:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     environment: default
-    needs: [build-linux-x86_64, build-linux-arm64, build-darwin-arm64]
+    needs: [build-linux-x86_64, build-linux-arm64, build-darwin-arm64, build-windows-amd64]
     steps:
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Clone source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download linux/amd64 binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: postbox-linux-x86_64
           path: postbox-linux-x86_64
 
       - name: Download linux/arm64 binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: postbox-linux-aarch64
           path: postbox-linux-aarch64
 
       - name: Download darwin/arm64 binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: postbox-darwin-arm64
           path: postbox-darwin-arm64
+
+      - name: Download windows/amd64 binary
+        uses: actions/download-artifact@v8
+        with:
+          name: postbox-windows-amd64
+          path: postbox-windows-amd64
 
       - name: Copy under alternative names
         run: |
@@ -174,7 +209,7 @@ jobs:
           cp postbox-linux-aarch64/postbox-linux-aarch64 postbox-linux-arm64
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./.github/workflows/Dockerfile
@@ -189,5 +224,6 @@ jobs:
             postbox-linux-x86_64/postbox-linux-x86_64
             postbox-linux-aarch64/postbox-linux-aarch64
             postbox-darwin-arm64/postbox-darwin-arm64
+            postbox-windows-amd64/postbox-windows-amd64.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

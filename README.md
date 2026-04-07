@@ -14,7 +14,7 @@ Postbox is an email testing server for developers. It acts as a local SMTP serve
 
 ## Quick start
 
-1. Download the latest binary for your platform (currently linux/amd64, linux/aarch64, darwin/amd64 are supported) and start the server:
+1. Download the latest binary for your platform (currently linux/amd64, linux/aarch64, darwin/amd64 and windows/amd64 are supported). On *nix, you can run the following command to download and start the server:
 
 ```bash
 curl -sSLfo postbox "https://github.com/supriyo-biswas/postbox/releases/download/$(
