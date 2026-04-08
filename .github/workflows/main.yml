@@ -25,7 +25,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build frontend assets
-        run: npm run build
+        run: npm run build && rm -r api/dist/*.map
 
       - name: Upload frontend assets
         uses: actions/upload-artifact@v7
