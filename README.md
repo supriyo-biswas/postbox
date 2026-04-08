@@ -30,7 +30,7 @@ chmod +x postbox
 Alternatively, use the Docker image:
 
 ```bash
-docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib --read-only supriyob/postbox
+docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib supriyob/postbox
 ```
 
 For Windows, download the `postbox-windows-amd64.exe` binary from the releases page and run it from the command prompt.
