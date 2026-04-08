@@ -33,7 +33,7 @@ Alternatively, use the Docker image:
 docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib supriyob/postbox
 ```
 
-For Windows, download the `postbox-windows-amd64.exe` binary from the releases page and run it from the command prompt.
+For Windows, download the `postbox-windows-amd64.exe` binary from the [releases page](https://github.com/supriyo-biswas/postbox/releases) and run it from the command prompt.
 
 2. Send an email to the server by configuring your application to use the following SMTP settings:
   - Host: localhost
@@ -41,15 +41,13 @@ For Windows, download the `postbox-windows-amd64.exe` binary from the releases p
   - SMTP Username/Password: `postbox-default/postbox-default`
   - SSL/TLS: None
 
-3. Authenticate as `postbox-default/postbox-default` on http://localhost:8080 or use the API server to fetch inboxes, emails and attachments:
+3. Visit http://localhost:8080 to view the email in the web UI, using the username/password of `postbox-default/postbox-default`. You can also use the API server to fetch inboxes, emails and attachments like so:
 
 ```bash
 curl localhost:8080/api/v1/inboxes/1/messages -H "Api-Token: postbox-default"
 ```
 
-For details on the API, see the [API documentation](https://api-docs.mailtrap.io/docs/mailtrap-api-docs/5tjdeg9545058-mailtrap-api). The inbox, email/message and attachment APIs are supported.
-
-Postbox is compatible with both v1 and v2 APIs. For the v2 APIs, simply pass in any random number for the account ID, since it is a local service and does not have the concept of user accounts.
+For details on the API, see the [API documentation](./docs/api.md).
 
 ## Creating inboxes
 
