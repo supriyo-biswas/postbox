@@ -24,5 +24,12 @@ func init() {
 		cfgFile = "$XDG_CONFIG_HOME/postbox/config.toml"
 	}
 
-	rootCmd.PersistentFlags().StringP("config", "c", "", fmt.Sprintf("config file (default: %s)", cfgFile))
+	dataDir, err := xdg.DataFile("postbox")
+	if err != nil {
+		dataDir = "$XDG_DATA_HOME/postbox"
+	}
+
+	flags := rootCmd.PersistentFlags()
+	flags.StringP("config", "c", "", fmt.Sprintf("config file (default: %s)", cfgFile))
+	flags.String("data-dir", "", fmt.Sprintf("base data directory (default: %s)", dataDir))
 }

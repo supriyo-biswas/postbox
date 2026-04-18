@@ -117,6 +117,20 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 	cfg.Server.Smtp.KeyFile = getDefaultPath(cfg.Server.Smtp.KeyFile, dir, "key.pem")
 	cfg.Server.Smtp.CertFile = getDefaultPath(cfg.Server.Smtp.CertFile, dir, "cert.pem")
 
+	dataDir, err := flags.GetString("data-dir")
+	if err != nil {
+		return nil, err
+	}
+
+	baseDataPath := dataDir
+	if baseDataPath == "" {
+		if defaultDataPath, err := xdg.DataFile("postbox"); err != nil {
+			return nil, err
+		} else {
+			baseDataPath = defaultDataPath
+		}
+	}
+
 	if cfg.Server.Smtp.MaxMsgBytes == 0 {
 		cfg.Server.Smtp.MaxMsgBytes = 1024 * 1024 * 10
 	} else if cfg.Server.Smtp.MaxMsgBytes < 1024 {
@@ -144,11 +158,7 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 	}
 
 	if cfg.Database.Path == "" {
-		if defaultStoragePath, err := xdg.DataFile("postbox"); err != nil {
-			return nil, err
-		} else {
-			cfg.Database.Path = defaultStoragePath
-		}
+		cfg.Database.Path = baseDataPath
 	}
 
 	if cfg.Logging == nil {
@@ -156,12 +166,7 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 	}
 
 	if cfg.Logging.Filename != "" && !filepath.IsAbs(cfg.Logging.Filename) {
-		logPath, err := xdg.DataFile(path.Join("postbox", cfg.Logging.Filename))
-		if err != nil {
-			return nil, err
-		}
-
-		cfg.Logging.Filename = logPath
+		cfg.Logging.Filename = path.Join(baseDataPath, cfg.Logging.Filename)
 	}
 
 	return &cfg, nil
