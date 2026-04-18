@@ -1,6 +1,7 @@
 {
 	"scripts": {
-		"watch": "npx parcel watch frontend/index.html --dist-dir api/dist --public-url /web",
+		"server:dev": "nodemon -e go,toml --signal SIGTERM --exec go run . -- server",
+		"assets:dev": "npx parcel watch frontend/index.html --dist-dir api/dist --public-url /web",
 		"build": "rm -rf api/dist && npx parcel build frontend/index.html --dist-dir api/dist --public-url /web",
 		"prepare": "husky"
 	},
@@ -12,6 +13,7 @@
 		"eslint-config-standard": "^17.1.0",
 		"husky": "^9.1.7",
 		"ky": "^1.14.3",
+		"nodemon": "^3.1.14",
 		"parcel": "^2.16.4",
 		"postcss": "^8.5.8",
 		"svgo": "^3.3.3",

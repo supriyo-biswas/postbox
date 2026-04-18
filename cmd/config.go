@@ -104,8 +104,13 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 		cfg.Server.Smtp = &SmtpConfig{}
 	}
 
-	if cfg.Server.Smtp.Listen == "" {
-		cfg.Server.Smtp.Listen = ":8025"
+	if cfg.Server.Smtp.Listen != "" {
+		if flags.Changed("smtp-port") {
+			return nil, errors.New("conflicting SMTP listen address: " +
+				"specified in both config and command line")
+		}
+	} else {
+		cfg.Server.Smtp.Listen = ":" + flags.Lookup("smtp-port").Value.String()
 	}
 
 	dir := filepath.Dir(cfgFile)
@@ -122,8 +127,13 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 		cfg.Server.Http = &HttpConfig{}
 	}
 
-	if cfg.Server.Http.Listen == "" {
-		cfg.Server.Http.Listen = ":8080"
+	if cfg.Server.Http.Listen != "" {
+		if flags.Changed("http-port") {
+			return nil, errors.New("conflicting HTTP listen address: " +
+				"specified in both config and command line")
+		}
+	} else {
+		cfg.Server.Http.Listen = ":" + flags.Lookup("http-port").Value.String()
 	}
 
 	cfg.Server.Http.KeyFile = getDefaultPath(cfg.Server.Http.KeyFile, dir, "key.pem")

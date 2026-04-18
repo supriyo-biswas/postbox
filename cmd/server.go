@@ -19,7 +19,7 @@ import (
 )
 
 func runServerCmd(cmd *cobra.Command, args []string) error {
-	cfg, err := readConfig(cmd.Root().PersistentFlags())
+	cfg, err := readConfig(cmd.Flags())
 	if err != nil {
 		return fmt.Errorf("failed to read config: %s", err)
 	}
@@ -134,4 +134,10 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
+}
+
+func init() {
+	flags := serverCmd.Flags()
+	flags.Uint16("smtp-port", 8025, "Port to listen for SMTP")
+	flags.Uint16("http-port", 8080, "Port to listen for web interface and API")
 }

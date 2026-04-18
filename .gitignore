@@ -1,4 +1,5 @@
 /data
+/.direnv
 /node_modules
 /api/dist
 /.parcel-cache
