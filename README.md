@@ -14,15 +14,10 @@ Postbox is an email testing server for developers. It acts as a local SMTP serve
 
 ## Quick start
 
-1. Download the latest binary for your platform (currently linux/amd64, linux/aarch64, darwin/amd64 and windows/amd64 are supported). On *nix, you can run the following command to download and start the server:
+1. Download the latest binary for your platform (currently linux/amd64, linux/aarch64, darwin/arm64 and windows/amd64 are supported). On *nix, you can run the following command to download and start the server:
 
 ```bash
-curl -sSLfo postbox "https://github.com/supriyo-biswas/postbox/releases/download/$(
-    curl -sSL https://api.github.com/repos/supriyo-biswas/postbox/releases |
-    sed -nr 's/.*"tag_name": "(.*)".*/\1/gp' |
-    head -n1
-)/postbox-$(uname -sm | tr 'A-Z ' 'a-z-')"
-
+curl -sSLfo postbox "https://github.com/supriyo-biswas/postbox/releases/latest/download/postbox-$(uname -sm | tr 'A-Z ' 'a-z-')"
 chmod +x postbox
 ./postbox server
 ```
@@ -33,7 +28,12 @@ Alternatively, use the Docker image:
 docker run -d --name postbox -p 8025:8025 -p 8080:8080 -v $PWD/postbox:/var/lib supriyob/postbox
 ```
 
-For Windows, download the `postbox-windows-amd64.exe` binary from the [releases page](https://github.com/supriyo-biswas/postbox/releases) and run it from the command prompt.
+On Windows, open PowerShell in the directory where you want to install Postbox, then download and run the latest release:
+
+```powershell
+Invoke-WebRequest -Uri 'https://github.com/supriyo-biswas/postbox/releases/latest/download/postbox-windows-amd64.exe' -OutFile '.\postbox.exe'
+.\postbox.exe server
+```
 
 2. Send an email to the server by configuring your application to use the following SMTP settings:
   - Host: localhost
