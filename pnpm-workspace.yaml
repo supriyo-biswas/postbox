@@ -1,0 +1,7 @@
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@swc/core'
+  - lmdb
+  - msgpackr-extract
+overrides:
+  nodemon>chokidar: 4.0.3

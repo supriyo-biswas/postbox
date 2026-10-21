@@ -32,6 +32,25 @@ jobs:
           go build --ldflags="-s -w" .
           go test -v -race --timeout 30m ./...
 
+  vulncheck:
+    name: Go vulnerability analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
+
+      - name: Run govulncheck
+        run: govulncheck ./...
+
   build-frontend:
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +93,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.27.3'
 
       - name: Install musl-tools for static linking
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -108,7 +127,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.27.3'
 
       - name: Install ARM64 Cross Compiler for musl
         run: sudo apt-get update && sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu
@@ -144,7 +163,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.27.3'
 
       - name: Build darwin/arm64 binary
         run: >-
@@ -172,7 +191,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.27.3'
 
       - name: Build windows/amd64 binary
         run: >

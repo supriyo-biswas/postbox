@@ -6,26 +6,19 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@eslint/eslintrc": "^3.3.5",
+		"@eslint/eslintrc": "^3.3.7",
 		"@tabler/icons-webfont": "^3.49.0",
-		"alpinejs": "^3.15.11",
-		"eslint": "^8.0.1",
+		"@tailwindcss/postcss": "^4.3.3",
+		"alpinejs": "^3.17.5",
+		"eslint": "^8.57.1",
 		"eslint-config-standard": "^17.1.0",
 		"husky": "^9.1.7",
 		"ky": "^1.14.3",
 		"nodemon": "^3.1.14",
 		"parcel": "^2.16.4",
-		"postcss": "^8.5.8",
-		"svgo": "^3.3.3",
-		"tailwindcss": "^3.4.19",
+		"postcss": "^8.5.31",
+		"svgo": "^4.1.0",
+		"tailwindcss": "^4.3.3",
 		"timeago.js": "^4.0.2"
-	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@parcel/watcher",
-			"@swc/core",
-			"lmdb",
-			"msgpackr-extract"
-		]
 	}
 }
