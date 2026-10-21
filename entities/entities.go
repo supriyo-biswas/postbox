@@ -33,6 +33,15 @@ type Inbox struct {
 	UpdatedAt time.Time
 }
 
+// An inbox is also the web user's account. Only a hash of the session token is stored.
+type Session struct {
+	UserId      int64     `gorm:"index;not null"`
+	Token       string    `gorm:"primaryKey;not null"`
+	RefreshedAt time.Time `gorm:"not null"`
+	ExpiresAt   time.Time `gorm:"index;not null"`
+	User        Inbox     `gorm:"foreignKey:UserId;references:Id;constraint:OnDelete:CASCADE;"`
+}
+
 type Email struct {
 	Id          int64          `gorm:"primaryKey;not null"`
 	InboxId     int64          `gorm:"index;not null"`

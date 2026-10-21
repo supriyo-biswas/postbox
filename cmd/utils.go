@@ -33,6 +33,7 @@ func openDb(dir string) (*gorm.DB, error) {
 
 	if err := d.AutoMigrate(
 		&ent.Inbox{},
+		&ent.Session{},
 		&ent.Email{},
 		&ent.Address{},
 		&ent.EmailContent{},

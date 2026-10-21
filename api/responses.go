@@ -10,7 +10,8 @@ const timestampFormat = "2006-01-02T15:04:05.000Z"
 
 const (
 	attachmentNotFoundMsg  = "attachment not found"
-	basicAuthFailedMsg     = "invalid username or password for basic auth"
+	loginFailedMsg         = "invalid username or password"
+	sessionRequiredMsg     = "please log in to continue"
 	inboxNameMissingMsg    = "missing inbox name"
 	inboxNotFoundMsg       = "inbox not found"
 	internalServerErrorMsg = "an internal error occurred"

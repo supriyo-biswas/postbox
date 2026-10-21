@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
@@ -111,6 +112,9 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 	go m.Serve(smtpListener)
 
 	handler := api.NewServer(d)
+	cleanupCtx, stopCleanup := context.WithCancel(context.Background())
+	defer stopCleanup()
+	go handler.RunSessionCleanup(cleanupCtx)
 	h := &http.Server{Addr: cfg.Server.Http.Listen, Handler: handler}
 	if httpCert != nil {
 		h.TLSConfig = &tls.Config{Certificates: []tls.Certificate{*httpCert}}

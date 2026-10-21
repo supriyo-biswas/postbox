@@ -1,158 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading...</title>
+    <meta name="theme-color" content="#f5f7fb">
+    <title>Postbox</title>
     <link rel="stylesheet" href="./app.css">
     <script type="module" src="./app.js"></script>
 </head>
-
-<body class="bg-gray-100" x-data="{ mode: 'loading', messages: [], currentMessage: null, bodyMode: 'text', error: '' }"
-    @messagesloaded.window="mode = 'messages-list'; messages = $event.detail.messages"
-    @messageloaded.window="mode = 'view-message'; currentMessage.textBody = $event.detail.textBody; currentMessage.htmlBody = $event.detail.htmlBody; currentMessage.attachments = $event.detail.attachments"
-    @erroroccurred.window="mode = 'error'; error = $event.detail.error;">
-    <div class="container mx-auto p-4">
-        <div class="bg-white shadow-md">
-            <template x-if="mode === 'loading'">
-                <div class="flex justify-center p-4">
-                    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-600"></i>
-                    <span class="sr-only">Loading...</span>
-                </div>
-            </template>
-            <template x-if="mode === 'error'">
-                <div class="p-4 text-red-600 text-center">
-                    <div>Error occurred: <span x-text="error"></span></div>
-                </div>
-            </template>
-            <template x-if="mode === 'messages-list'">
-                <div>
-                    <div class="grid grid-cols-4 gap-4 p-4 font-bold bg-gray-200">
-                        <div>Sender</div>
-                        <div class="col-span-2">Subject</div>
-                        <div>Date</div>
-                    </div>
-
-                    <template x-if="messages.length === 0">
-                        <div class="p-4 text-center">
-                            No messages found
-                        </div>
-                    </template>
-
-                    <template x-for="message in messages">
-                        <div class="grid grid-cols-4 gap-4 p-4 hover:bg-gray-50 cursor-pointer"
-                            @click="$dispatch('openmessage', message.id); currentMessage = message; bodyMode = 'text'; mode = 'loading'; currentMessage.is_read = true;">
-                            <div class="overflow-hidden overflow-ellipsis text-nowrap">
-                                <span :class="message.is_read ? '' : 'font-semibold'"
-                                    x-text="message.from_name || message.from_email"></span>
-                            </div>
-                            <div class="col-span-2 overflow-hidden overflow-ellipsis text-nowrap">
-                                <span :class="message.is_read ? '' : 'font-semibold'"
-                                    x-text="message.subject || '(No subject)'"></span>
-                            </div>
-                            <div class="overflow-hidden overflow-ellipsis text-nowrap">
-                                <span :class="message.is_read ? '' : 'font-semibold'" x-text="message.sent_at"></span>
-                            </div>
-                        </div>
-                    </template>
-
-                    <div class="grid grid-cols-2 p-4 bg-gray-200">
-                        <div class="x-cloak font-bold">
-                            Page <span x-text="$store.page"></span> of <span x-text="$store.pages"></span>
-                        </div>
-                        <div class="col-span-1 flex justify-end x-cloak">
-                            <div :class="'text-white bg-gray-600 hover:bg-gray-500 border-2 rounded-md px-2 mr-2 ' + ($store.page === 1 ? 'opacity-50 cursor-not-allowed ' : 'cursor-pointer')"
-                                @click="if ($store.page > 1) { $store.page--; $dispatch('loadmessages', $store.page); }">
-                                <i class="fa-solid fa-chevron-left"></i>
-                            </div>
-                            <div :class="'text-white bg-gray-600 hover:bg-gray-500 border-2 rounded-md px-2 mr-2 ' + ($store.page === $store.pages ? 'opacity-50 cursor-not-allowed ' : 'cursor-pointer')"
-                                @click="if ($store.page < $store.pages) { $store.page++; $dispatch('loadmessages', $store.page); }">
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </div>
-                            <div class="text-white bg-green-600 hover:bg-green-500 border-2 rounded-md px-2 mr-2 cursor-pointer"
-                                @click="mode = 'loading'; $dispatch('loadmessages', $store.page);">
-                                <i class="fa-solid fa-rotate-right"></i>
-                            </div>
-                            <div :class="'text-white bg-red-500 hover:bg-red-400 border-2 rounded-md px-2 ' + (messages.length === 0 ? 'opacity-50 cursor-not-allowed ' : 'cursor-pointer')"
-                                @click="if (confirm('Are you sure you want to delete all messages?')) { mode = 'loading'; $dispatch('deletemessages'); }">
-                                <i class="fa-solid fa-trash"></i>
-                            </div>
-                        </div>
+<body x-data="mailbox">
+    <div class="app-shell">
+        <div class="auth-loading" x-show="authChecking" role="status"><i class="ti ti-loader-2 icon-spin" aria-hidden="true"></i><span>Opening Postbox…</span></div>
+        <main class="login-page" x-show="!authChecking && !authenticated" x-cloak>
+            <form class="login-form" @submit.prevent="login()" :aria-busy="authBusy">
+                <span class="login-icon"><i class="ti ti-inbox" aria-hidden="true"></i></span>
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" autocomplete="username" x-model="username" required :disabled="authBusy" autocapitalize="none" spellcheck="false">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" x-model="password" required :disabled="authBusy">
+                <p class="login-error" x-show="authError" x-text="authError" role="alert"></p>
+                <button class="login-button" type="submit" :disabled="authBusy"><i class="ti ti-loader-2 icon-spin" x-show="authBusy" aria-hidden="true"></i><span x-text="authBusy ? 'Logging in…' : 'Log in'"></span></button>
+            </form>
+        </main>
+        <main class="mail-workspace" :class="{ 'show-reader': mobileReader }" x-show="!authChecking && authenticated" x-cloak>
+            <section class="inbox-panel" aria-label="Inbox messages">
+                <div class="inbox-heading">
+                    <div class="inbox-title"><i class="ti ti-inbox" aria-hidden="true"></i><h1>Inbox</h1><span class="count-badge" x-text="count"></span></div>
+                    <div class="heading-actions">
+                        <button class="icon-button" @click="loadMessages()" :disabled="loading" title="Refresh inbox" aria-label="Refresh inbox"><i class="ti ti-refresh" :class="{ 'icon-spin': loading }" aria-hidden="true"></i></button>
+                        <button class="icon-button danger" @click="clearInbox()" :disabled="loading || count === 0" title="Delete all messages" aria-label="Delete all messages"><i class="ti ti-trash-x" aria-hidden="true"></i></button>
                     </div>
                 </div>
-            </template>
-            <template x-if="mode === 'view-message'">
-                <div>
-                    <div class="flex justify-between p-4">
-                        <span x-text="currentMessage.subject || '(No subject)'"></span>
-                        <div class="select-none text-xs border-0 rounded-md px-2 flex items-center bg-red-500 hover:bg-red-400 text-white cursor-pointer"
-                            @click="mode = 'messages-list'">
-                            <i class="fa-solid fa-xmark"></i>
-                        </div>
-                    </div>
-                    <template x-if="currentMessage">
-                        <div>
-                            <div class="grid grid-cols-4 p-4">
-                                <div class="font-bold">From:</div>
-                                <div class="col-span-3"
-                                    x-text="$store.g.nameAndEmail(currentMessage.from_name, currentMessage.from_email)">
-                                </div>
-                                <div class="font-bold">To:</div>
-                                <div class="col-span-3"
-                                    x-text="currentMessage.addresses.to.map(({ name, address }) => $store.g.nameAndEmail(name, address)).join(', ')">
-                                </div>
-                                <template x-if="currentMessage.addresses.cc.length > 0">
-                                    <div class="font-bold">Cc:</div>
-                                </template>
-                                <template x-if="currentMessage.addresses.cc.length > 0">
-                                    <div class="col-span-3"
-                                        x-text="currentMessage.addresses.cc.map(({ name, address }) => $store.g.nameAndEmail(name, address)).join(', ')">
-                                    </div>
-                                </template>
-                                <template x-if="currentMessage.addresses.bcc.length > 0">
-                                    <div class="font-bold">Bcc:</div>
-                                </template>
-                                <template x-if="currentMessage.addresses.bcc.length > 0">
-                                    <div class="col-span-3"
-                                        x-text="currentMessage.addresses.bcc.map(({ name, address }) => $store.g.nameAndEmail(name, address)).join(', ')">
-                                    </div>
-                                </template>
-                            </div>
-                            <div class="px-4 flex gap-2 border-b">
-                                <button class="px-3 py-1 rounded-t-md border border-b-0"
-                                    :class="bodyMode === 'text' ? 'bg-white font-semibold' : 'bg-gray-100 text-gray-600'"
-                                    @click="bodyMode = 'text'">
-                                    Text
-                                </button>
-                                <button class="px-3 py-1 rounded-t-md border border-b-0"
-                                    :class="bodyMode === 'html' ? 'bg-white font-semibold' : 'bg-gray-100 text-gray-600'"
-                                    @click="bodyMode = 'html'">
-                                    HTML
-                                </button>
-                            </div>
-                            <template x-if="bodyMode === 'text'">
-                                <pre class="p-4 font-mono whitespace-pre-wrap break-words"
-                                    x-html="currentMessage.textBody"></pre>
-                            </template>
-                            <template x-if="bodyMode === 'html'">
-                                <iframe class="w-full min-h-96 p-4" :srcdoc="currentMessage.htmlBody"></iframe>
-                            </template>
-                            <template x-if="currentMessage.attachments.length > 0">
-                                <div class="p-4">
-                                    <div class="font-bold">Attachments</div>
-                                    <template x-for="attachment in currentMessage.attachments">
-                                        <a :href="'/web/api/messages/' + currentMessage.id + '/attachments/' + attachment.id + '/download'"
-                                            target="_blank" class="block text-blue-500 hover:underline"
-                                            x-text="attachment.filename || '(Unnamed attachment)'"></a>
-                                </div>
-                            </template>
+                <div class="search-area"><label class="search-field"><i class="ti ti-search" aria-hidden="true"></i><input type="search" aria-label="Search messages by subject" placeholder="Search by subject…" x-model="search" @input.debounce.300ms="loadMessages(true)"></label></div>
+                <div class="list-caption"><span x-text="search.trim() ? 'SEARCH RESULTS' : 'ALL MESSAGES'"></span><span x-text="unread + ' unread'"></span></div>
+                <div class="message-list" :aria-busy="loading">
+                    <div class="list-notice error-notice" x-show="error" role="alert"><i class="ti ti-alert-circle" aria-hidden="true"></i><p x-text="error"></p><button @click="loadMessages()">Try again</button></div>
+                    <div class="list-notice" x-show="loading && !messages.length && !error" role="status"><i class="ti ti-loader-2 icon-spin" aria-hidden="true"></i><p>Loading your inbox…</p></div>
+                    <div class="list-notice" x-show="!loading && !error && !messages.length"><span class="notice-icon"><i :class="search.trim() ? 'ti ti-search' : 'ti ti-mail'" aria-hidden="true"></i></span><h2 x-text="search.trim() ? 'No matches found' : 'A fresh, empty inbox'"></h2><p x-text="search.trim() ? 'Try a different subject or clear your search.' : 'Your incoming messages will appear here.'"></p><button x-show="search.trim()" @click="search = ''; loadMessages(true)">Clear search</button></div>
+                    <template x-for="message in messages" :key="message.id">
+                        <div class="message-row" :class="{ 'is-selected': currentMessage?.id === message.id, 'is-unread': !message.is_read }">
+                            <button class="message-select" :aria-current="currentMessage?.id === message.id ? 'true' : null" @click="openMessage(message)">
+                            <span class="sender-avatar" :class="senderColor(message)" x-text="initials(message)"></span>
+                            <span class="message-summary"><span class="message-topline"><span class="sender-name" x-text="message.from_name || message.from_email || 'Unknown sender'"></span><time :datetime="message.sent_at" :title="fullDate(message.sent_at)" x-text="relativeDate(message.sent_at)"></time></span><span class="message-subject" x-text="message.subject || '(No subject)'"></span><span class="message-bottomline"><span class="sender-email" x-text="message.from_email || 'No sender address'"></span></span></span>
+                            </button>
+                            <button class="read-toggle" :class="{ 'is-unread': !message.is_read }" :disabled="readUpdates.includes(message.id) || (messageLoading && currentMessage?.id === message.id)" :aria-label="message.is_read ? 'Mark as unread' : 'Mark as read'" :title="message.is_read ? 'Mark as unread' : 'Mark as read'" @click="toggleRead(message)"><span aria-hidden="true"></span></button>
                         </div>
                     </template>
                 </div>
-            </template>
-        </div>
+                <footer class="list-footer">
+                    <div class="account" :title="inbox || 'Your inbox'"><span class="account-avatar" x-text="(inbox || 'P').slice(0, 1).toUpperCase()"></span><span class="account-label" x-text="inbox || 'Your inbox'"></span><button class="icon-button" @click="logout()" :disabled="authBusy" title="Log out" aria-label="Log out"><i class="ti ti-logout" aria-hidden="true"></i></button></div>
+                    <nav class="pagination" aria-label="Message pages"><button class="icon-button" @click="changePage(-1)" :disabled="page <= 1 || loading" aria-label="Previous page" title="Previous page"><i class="ti ti-chevron-left" aria-hidden="true"></i></button><span class="page-position" aria-live="polite" x-text="page + '/' + (search.trim() ? (hasNext ? '…' : page) : Math.max(1, Math.ceil(count / 50)))"></span><button class="icon-button" @click="changePage(1)" :disabled="!hasNext || loading" aria-label="Next page" title="Next page"><i class="ti ti-chevron-right" aria-hidden="true"></i></button></nav>
+                </footer>
+            </section>
+            <section class="reading-panel" aria-label="Message content" :aria-busy="messageLoading">
+                <div class="reader-empty" x-show="!currentMessage"><div class="empty-illustration"><i class="ti ti-mail-opened" aria-hidden="true"></i><span class="illustration-dot"></span></div><h2>A little space to read.</h2><p>Select a message to see what’s inside.</p></div>
+                <template x-if="currentMessage">
+                    <div class="reader-content">
+                        <div class="reader-toolbar"><button class="back-button" @click="mobileReader = false"><i class="ti ti-arrow-left" aria-hidden="true"></i> Inbox</button><span class="reader-eyebrow">MESSAGE</span><div class="reader-actions"><button class="icon-button danger" @click="deleteMessage()" :disabled="deletingMessage || messageLoading" title="Delete message" aria-label="Delete message"><i class="ti ti-trash" aria-hidden="true"></i></button><div class="body-switch" role="group" aria-label="Message format"><button :class="{ active: bodyMode === 'html' }" :aria-pressed="bodyMode === 'html'" @click="bodyMode = 'html'">HTML</button><button :class="{ active: bodyMode === 'text' }" :aria-pressed="bodyMode === 'text'" @click="bodyMode = 'text'">Text</button></div></div></div>
+                        <div class="reader-scroll">
+                            <header class="message-header">
+                                <h2 x-text="currentMessage.subject || '(No subject)'"></h2>
+                                <div class="message-sender"><span class="sender-avatar large" :class="senderColor(currentMessage)" x-text="initials(currentMessage)"></span><div class="sender-details"><div class="sender-identity"><strong x-text="currentMessage.from_name || currentMessage.from_email || 'Unknown sender'"></strong><span x-show="currentMessage.from_name" x-text="currentMessage.from_email"></span></div><div class="recipient-line"><span class="recipient-label">To</span><span x-text="recipients(currentMessage.addresses?.to)"></span></div></div><time class="message-date" :datetime="currentMessage.sent_at" x-text="fullDate(currentMessage.sent_at)"></time></div>
+                                <template x-for="kind in ['cc', 'bcc']" :key="kind"><div class="extra-recipients" x-show="currentMessage.addresses?.[kind]?.length"><span class="recipient-label" x-text="kind === 'cc' ? 'Cc' : 'Bcc'"></span><span x-text="recipients(currentMessage.addresses?.[kind])"></span></div></template>
+                            </header>
+                            <div class="body-status" x-show="messageLoading" role="status"><i class="ti ti-loader-2 icon-spin" aria-hidden="true"></i> Loading message…</div>
+                            <div class="body-status error-notice" x-show="messageError" role="alert"><p x-text="messageError"></p><button @click="openMessage(currentMessage)">Try again</button></div>
+                            <div x-show="!messageLoading && !messageError">
+                                <div class="text-body" x-show="bodyMode === 'text'" x-html="currentMessage.textBody"></div>
+                                <template x-if="bodyMode === 'html'"><iframe class="html-body" title="HTML email content" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" :srcdoc="currentMessage.htmlBody"></iframe></template>
+                                <section class="attachments" x-show="currentMessage.attachments.length"><h3><i class="ti ti-paperclip" aria-hidden="true"></i> Attachments <span x-text="'(' + currentMessage.attachments.length + ')'"></span></h3><div class="attachment-list"><template x-for="attachment in currentMessage.attachments" :key="attachment.id"><a class="attachment" :href="'/web/api/messages/' + currentMessage.id + '/attachments/' + attachment.id + '/download'" target="_blank" rel="noopener"><i class="ti ti-file-text" aria-hidden="true"></i><span><strong x-text="attachment.filename || '(Unnamed attachment)'"></strong><small x-text="attachment.attachment_human_size"></small></span><i class="ti ti-download" aria-hidden="true"></i></a></template></div></section>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </section>
+        </main>
     </div>
 </body>
-
 </html>

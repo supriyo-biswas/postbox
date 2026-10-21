@@ -110,7 +110,10 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 				"specified in both config and command line")
 		}
 	} else {
-		cfg.Server.Smtp.Listen = ":" + flags.Lookup("smtp-port").Value.String()
+		cfg.Server.Smtp.Listen = ":8025"
+		if flag := flags.Lookup("smtp-port"); flag != nil {
+			cfg.Server.Smtp.Listen = ":" + flag.Value.String()
+		}
 	}
 
 	dir := filepath.Dir(cfgFile)
@@ -147,7 +150,10 @@ func readConfig(flags *pflag.FlagSet) (*Config, error) {
 				"specified in both config and command line")
 		}
 	} else {
-		cfg.Server.Http.Listen = ":" + flags.Lookup("http-port").Value.String()
+		cfg.Server.Http.Listen = ":8080"
+		if flag := flags.Lookup("http-port"); flag != nil {
+			cfg.Server.Http.Listen = ":" + flag.Value.String()
+		}
 	}
 
 	cfg.Server.Http.KeyFile = getDefaultPath(cfg.Server.Http.KeyFile, dir, "key.pem")

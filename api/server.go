@@ -43,11 +43,14 @@ func NewServer(db *gorm.DB) *Server {
 	}
 
 	web := r.PathPrefix("/web").Subrouter()
+	web.Use(s.protectWebRequests)
+	web.HandleFunc("/auth", s.login).Methods("POST")
+	web.Handle("/auth", s.enforceSession(http.HandlerFunc(s.logout))).Methods("DELETE")
 	wapi := web.PathPrefix("/api").Subrouter()
 	web.PathPrefix("").Handler(http.StripPrefix("/web", http.FileServer(s.fs)))
 
-	wapi.Use(s.enforceBasicAuth)
-	wapi.HandleFunc("/info", s.webApiGetInfo).Methods("GET")
+	wapi.Use(s.enforceSession)
+	wapi.HandleFunc("/", s.getInbox).Methods("GET")
 
 	v1 := r.PathPrefix("/api/v1").Subrouter()
 	v2 := r.PathPrefix("/api/accounts/{account}").Subrouter()

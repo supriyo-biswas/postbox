@@ -31,48 +31,6 @@ func (s *Server) applyBodyLimit(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) enforceBasicAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u, p, ok := r.BasicAuth()
-		if !ok {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-			sendError(w, http.StatusUnauthorized, basicAuthFailedMsg)
-			return
-		}
-
-		var inbox ent.Inbox
-		tx := s.db.Where("name = ?", u).First(&inbox)
-		if tx.Error != nil {
-			if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
-				w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-				sendError(w, http.StatusUnauthorized, basicAuthFailedMsg)
-				return
-			}
-
-			log.Printf("failed to get inbox: %s", tx.Error)
-			sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
-			return
-		}
-
-		res, err := utils.VerifySecret(p, inbox.ApiKey)
-		if err != nil {
-			log.Printf("failed to verify secret for %s: %s", p, err)
-			sendError(w, http.StatusInternalServerError, internalServerErrorMsg)
-			return
-		}
-
-		if !res {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-			sendError(w, http.StatusUnauthorized, basicAuthFailedMsg)
-			return
-		}
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, inboxContextKey, &inbox)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
 func (s *Server) bindInbox(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := mux.Vars(r)["inbox"]
