@@ -1,7 +1,8 @@
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
-  - lmdb
-  - msgpackr-extract
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  lmdb: true
+  msgpackr-extract: true
 overrides:
   nodemon>chokidar: 4.0.3
+  electron-to-chromium: 1.5.460
